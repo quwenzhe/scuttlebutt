@@ -1,7 +1,7 @@
-package com.quwenzhe.scuttlebutt;
+package com.quwenzhe.scuttlebutt.model;
 
 /**
- * @Description
+ * @Description 知识
  * @Author quwenzhe
  * @Date 2020/7/22 5:50 PM
  */
@@ -20,7 +20,7 @@ public class Update {
     /**
      * 知识的最新数据
      */
-    public Long timestamp;
+    public Long timestamp = 0L;
 
     /**
      * 知识

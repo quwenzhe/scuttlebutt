@@ -1,7 +1,7 @@
-package com.quwenzhe.scuttlebutt;
+package com.quwenzhe.scuttlebutt.model;
 
 /**
- * @Description 流可选项
+ * @Description 流类型
  * @Author quwenzhe
  * @Date 2020/7/22 5:27 PM
  */

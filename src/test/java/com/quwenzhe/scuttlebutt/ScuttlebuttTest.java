@@ -1,10 +1,15 @@
 package com.quwenzhe.scuttlebutt;
 
+import com.quwenzhe.scuttlebutt.model.ModelValueItem;
+import com.quwenzhe.scuttlebutt.model.StreamOptions;
+import com.quwenzhe.scuttlebutt.model.Update;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Map;
+
 /**
- * @Description
+ * @Description 单元测试
  * @Author quwenzhe
  * @Date 2020/7/22 6:05 PM
  */
@@ -12,42 +17,33 @@ public class ScuttlebuttTest {
 
     @Test
     public void putAndGet() {
-        // 构建Model、Duplex One
-        String modelNameOne = "one";
-        Model modelOne = new Model(modelNameOne);
-        Duplex duplexOne = buildDuplex(modelOne);
+        String modelNameVehicle = "vehicle";
+        String keyVehicle = "key_" + modelNameVehicle;
+        String valueVehicle = "value_" + modelNameVehicle;
+        Model modelVehicle = new Model(modelNameVehicle);
+        Duplex duplexVehicle = buildDuplex(modelVehicle);
 
-        // 构建Model、Duplex Two
-        String modelNameTwo = "two";
-        Model modelTwo = new Model(modelNameTwo);
-        Duplex duplexTwo = buildDuplex(modelTwo);
+        String modelNameCloud = "cloud";
+        Model modelCloud = new Model(modelNameCloud);
+        Duplex duplexCloud = buildDuplex(modelCloud);
 
-        //发起连接的一端，负责把自己和对方的知识差算出来，并发送到对端
-        duplexOne.link(duplexTwo, modelOne::shakeHand);
-        duplexTwo.link(duplexOne, modelTwo::shakeHand);
+        duplexVehicle.link(duplexCloud, duplexCloud::shakeHand);
+        duplexCloud.link(duplexVehicle, duplexVehicle::shakeHand);
 
-        // Model One更新，验证Model One、Two是否都更新
-        String modelOneKey = "key_" + modelNameOne;
-        String modelOneValue = "value_" + modelNameOne;
-        Update updateOne = buildUpdate(modelNameOne, modelOneKey, modelOneValue);
-        modelOne.set(updateOne);
-        Assert.assertTrue(modelOne.get(modelOneKey).equals(updateOne));
-        Assert.assertTrue(modelTwo.get(modelOneKey).equals(updateOne));
+        Update updateVehicle = buildUpdate(modelNameVehicle, keyVehicle, valueVehicle);
+        modelVehicle.set(updateVehicle);
 
-        // Model Two更新，验证Model One、Two是否都更新
-        String modelTwoKey = "key_" + modelNameTwo;
-        String modelTwoValue = "value_" + modelNameTwo;
-        Update updateTwo = buildUpdate(modelNameTwo, modelTwoKey, modelTwoValue);
-        modelTwo.set(updateTwo);
-        Assert.assertTrue(modelOne.get(modelTwoKey).equals(updateTwo));
-        Assert.assertTrue(modelTwo.get(modelTwoKey).equals(updateTwo));
+        Map<String, Update> vehicleUpdate = modelVehicle.get();
+        Map<String, Update> cloudUpdate = modelCloud.get();
+        Assert.assertTrue(vehicleUpdate.get(modelNameVehicle).equals(updateVehicle));
+        Assert.assertTrue(cloudUpdate.get(modelNameVehicle).equals(updateVehicle));
     }
 
-    private Duplex buildDuplex(Model modelOne) {
-        StreamOptions streamOptionsTwo = new StreamOptions();
-        streamOptionsTwo.readable = true;
-        streamOptionsTwo.writable = true;
-        return modelOne.createStream(streamOptionsTwo);
+    private Duplex buildDuplex(Model model) {
+        StreamOptions streamOptions = new StreamOptions();
+        streamOptions.readable = true;
+        streamOptions.writable = true;
+        return model.createStream(streamOptions);
     }
 
     private Update buildUpdate(String modelName, String modelKey, String modelValue) {
@@ -63,4 +59,5 @@ public class ScuttlebuttTest {
 
         return update;
     }
+
 }

@@ -1,82 +1,57 @@
 package com.quwenzhe.scuttlebutt;
 
+import com.quwenzhe.scuttlebutt.model.StreamOptions;
+import com.quwenzhe.scuttlebutt.model.Update;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * @Description 定义计算方法、存储协议
+ * @Description 定义节点数据计算、存储标准
  * @Author quwenzhe
  * @Date 2020/7/22 5:34 PM
  */
-public abstract class Scuttlebutt {
+public abstract class Scuttlebutt extends EventEmit {
 
     /**
-     * 本节点Id
+     * 本节点数据Id
      */
     protected String sourceId;
 
     /**
-     * 本节点最新时钟
+     * 一个scuttlebutt管理多个duplex
+     * 每个duplex负责和对端的一个连接
      */
-    protected Long timestamp = 0L;
+    protected List<Duplex> duplexes = new ArrayList<>();
 
     /**
-     * model拥有的duplex
-     */
-    protected Duplex duplex;
-
-    /**
-     * key:sourceId  value:sourceId知识最新时钟
+     * 本节点+对端所有数据源的知识最新时钟
+     * key:sourceId value:节点最新时钟
      */
     protected Map<String, Long> sources = new ConcurrentHashMap<>();
 
     /**
-     * 获取本节点Id
-     *
-     * @return 节点Id
-     */
-    public String getSourceId() {
-        return sourceId;
-    }
-
-    /**
-     * 获取本节点最大时钟
-     *
-     * @return 本节点最大时钟
-     */
-    public Long getTimestamp() {
-        return timestamp;
-    }
-
-    /**
-     * 创建流
+     * 创建数据流
      *
      * @param streamOptions 流选项
      * @return 通道
      */
-    public abstract Duplex createStream(StreamOptions streamOptions);
+    protected abstract Duplex createStream(StreamOptions streamOptions);
 
     /**
-     * 建立建立后，节点之间进行握手（非常像国家领导人会晤）
+     * 本节点知识更新、对端知识更新并同步到本节点
      *
-     * @param object 初次会晤时，表明自己的身份和最新的知识时钟即可
+     * @param update 知识
      */
-    public abstract void shakeHand(Object object);
+    protected abstract void applyUpdate(Update update);
 
     /**
-     * 应用更新
+     * 针对每个数据源计算知识差
      *
-     * @param update 新知识
+     * @param sources 全部对端知识源
+     * @return 每个端和本地的知识差
      */
-    public abstract void applyUpdate(Update update);
-
-    /**
-     * 计算对端数据和本节点数据的知识差
-     *
-     * @param source 对端信息
-     * @return 知识差
-     */
-    public abstract List<Update> history(Source source);
-
+    protected abstract Map<String, Update> history(Map<String, Long> sources);
 }

@@ -1,79 +1,93 @@
 package com.quwenzhe.scuttlebutt;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.quwenzhe.scuttlebutt.model.EventType;
+import com.quwenzhe.scuttlebutt.model.StreamOptions;
+import com.quwenzhe.scuttlebutt.model.Update;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * @Description Scuttlebutt存储实现
+ * @Description 知识内容存储
  * @Author quwenzhe
  * @Date 2020/7/22 7:37 PM
  */
+@Slf4j
 public class Model extends Scuttlebutt {
-
-    /**
-     * 保存最新知识
-     */
-    private Map<String, Update> stores = new ConcurrentHashMap<>();
 
     public Model(String sourceId) {
         this.sourceId = sourceId;
     }
 
+    /**
+     * 保存每个节点最新的知识
+     * key:sourceId value:节点最新知识
+     */
+    private Map<String, Update> stores = new ConcurrentHashMap<>();
+
     @Override
-    public Duplex createStream(StreamOptions streamOptions) {
-        // 建立scuttlebutt拥有的duplex、duplex归属的scuttlebutt
-        this.duplex = new Duplex(this, streamOptions);
+    protected Duplex createStream(StreamOptions streamOptions) {
+        Duplex duplex = new Duplex(this, streamOptions);
+        if (!this.duplexes.contains(duplex)) {
+            this.duplexes.add(duplex);
+        }
+
+        // 监听对端的事件
+        listenPeerEvents();
+
         return duplex;
     }
 
     @Override
-    public void shakeHand(Object object) {
-        if (object instanceof Source) {
-            Source source = (Source) object;
-            // 记录对端的id、最新知识时钟
-            sources.put(source.sourceId, source.timestamp);
+    protected void applyUpdate(Update update) {
+        Update localUpdate = stores.getOrDefault(update.sourceId, new Update());
+        if (update.timestamp > localUpdate.timestamp) {
+            // 更新对端知识最新时钟
+            sources.put(update.sourceId, update.timestamp);
 
-            // 算出本节点和对端的知识差
-            List<Update> deltaUpdate = history(source);
-            deltaUpdate.forEach(update -> this.duplex.put(update));
+            // 更新对端知识
+            stores.put(update.sourceId, update);
         }
+
+        this.emit(EventType.UPDATE, update);
     }
 
     @Override
-    public void applyUpdate(Update update) {
-        Object object = update.data;
-        if (object instanceof ModelValueItem) {
-            ModelValueItem modelValueItem = (ModelValueItem) object;
-            Update storeUpdate = stores.get(modelValueItem.key);
-            if (null == storeUpdate || update.timestamp > storeUpdate.timestamp) {
-                stores.put(modelValueItem.key, update);
-                this.timestamp = update.timestamp;
-            }
-        }
-    }
+    protected Map<String, Update> history(Map<String, Long> sources) {
+        Map<String, Update> deltaUpdate = new ConcurrentHashMap<>();
 
-    @Override
-    public List<Update> history(Source source) {
-        List<Update> delta = new ArrayList<>();
-        stores.forEach((key, update) -> {
-            if (update.timestamp > source.timestamp) {
-                delta.add(update);
+        sources.forEach((sourceId, timestamp) -> {
+            Update localUpdate = stores.getOrDefault(sourceId, new Update());
+            if (localUpdate.timestamp > timestamp) {
+                deltaUpdate.put(sourceId, localUpdate);
             }
         });
-        return delta;
+
+        return deltaUpdate;
+    }
+
+    /**
+     * 监听对端的事件
+     */
+    private void listenPeerEvents() {
+        this.subscribe(EventType.UPDATE, update -> notifyAllPeerDuplex((Update) update));
+    }
+
+    /**
+     * 通知所有对端的duplex
+     *
+     * @param update
+     */
+    private void notifyAllPeerDuplex(Update update) {
+        this.duplexes.forEach(duplex -> duplex.put(update));
     }
 
     public void set(Update update) {
-        // 本地更新
-        applyUpdate(update);
-
-        // 通过duplex更新对端
-        this.duplex.put(update);
+        this.applyUpdate(update);
     }
 
-    public Update get(String key) {
-        return stores.get(key);
+    public Map<String, Update> get() {
+        return this.stores;
     }
 }

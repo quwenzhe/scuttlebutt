@@ -1,9 +1,9 @@
-package com.quwenzhe.scuttlebutt;
+package com.quwenzhe.scuttlebutt.model;
 
 /**
- * @Description
+ * @Description 知识内容
  * @Author quwenzhe
- * @Date 2020/7/23 11:16 AM
+ * @Date 2020/7/25 7:51 PM
  */
 public class ModelValueItem {
 
