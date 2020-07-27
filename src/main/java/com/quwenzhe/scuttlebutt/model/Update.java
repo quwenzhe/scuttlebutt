@@ -35,4 +35,14 @@ public class Update implements Comparable<Update> {
         }
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "Update{" +
+                "sourceId='" + sourceId + '\'' +
+                ", fromId='" + fromId + '\'' +
+                ", timestamp=" + timestamp +
+                ", data=" + data +
+                '}';
+    }
 }

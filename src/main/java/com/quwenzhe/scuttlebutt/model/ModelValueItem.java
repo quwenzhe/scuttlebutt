@@ -10,4 +10,12 @@ public class ModelValueItem {
     public String key;
 
     public String value;
+
+    @Override
+    public String toString() {
+        return "ModelValueItem{" +
+                "key='" + key + '\'' +
+                ", value='" + value + '\'' +
+                '}';
+    }
 }

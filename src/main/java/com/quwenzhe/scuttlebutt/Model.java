@@ -21,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class Model extends Scuttlebutt {
 
-    public Model(String sourceId) {
-        this.sourceId = sourceId;
+    public Model(String peerId) {
+        this.peerId = peerId;
     }
 
     /**

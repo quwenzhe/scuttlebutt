@@ -6,7 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+
+import static com.quwenzhe.scuttlebutt.Constants.SYNC;
+import static com.quwenzhe.scuttlebutt.model.EventType.SYNC_RECEIVE;
+import static com.quwenzhe.scuttlebutt.model.EventType.SYNC_SENT;
 
 /**
  * @Description 连接
@@ -14,7 +17,7 @@ import java.util.function.Consumer;
  * @Date 2020/7/22 5:26 PM
  */
 @Slf4j
-public class Duplex {
+public class Duplex extends EventEmit {
 
     /**
      * duplex归属的scuttlebutt
@@ -41,10 +44,13 @@ public class Duplex {
      *
      * @param peerDuplex 对端的duplex
      */
-    public void link(Duplex peerDuplex, Consumer<Map<String, Long>> callback) {
+    public void link(Duplex peerDuplex) {
         // 记录和本节点建立连接的duplex
         this.peerDuplex = peerDuplex;
-        callback.accept(this.scuttlebutt.sources);
+
+        // 订阅数据发送、接收事件
+        this.subscribe(SYNC_SENT, o -> log.info("peerId:{} sent sync to peerId:{}", this.scuttlebutt.peerId, peerDuplex.scuttlebutt.peerId));
+        this.subscribe(SYNC_RECEIVE, o -> log.info("peerId:{} receive sync from peerId:{}", this.scuttlebutt.peerId, peerDuplex.scuttlebutt.peerId));
     }
 
     /**
@@ -54,30 +60,46 @@ public class Duplex {
      */
     public void shakeHand(Map<String, Long> sources) {
         List<Update> updates = scuttlebutt.history(sources);
-        updates.forEach(update -> this.update(update));
+        updates.forEach(this::put);
+
+        // 本地及对端通知SYNC事件
+        emit(SYNC_SENT, null);
+        this.put(SYNC);
     }
 
     /**
      * 通知和当前Duplex建立连接的Duplex更新知识
      *
-     * @param update 知识
+     * @param object 知识
      */
-    public void put(Update update) {
-        this.peerDuplex.update(update);
+    public void put(Object object) {
+        this.peerDuplex.localUpdate(object);
+    }
+
+    public Map<String, Long> getSources() {
+        return this.scuttlebutt.sources;
     }
 
     /**
      * 接收对端的知识，更新本地知识
      *
-     * @param update 知识
+     * @param object 知识
      */
-    public void update(Update update) {
-        // 如果自己发送的数据又传播回来，直接忽略
-        if (update.sourceId.equals(scuttlebutt.sourceId)) {
-            log.info("I receive my own message,sourceId:{},update:{}", update.sourceId, update);
-            return;
-        }
+    private void localUpdate(Object object) {
+        if (object instanceof String) {
+            if (SYNC.equals(object)) {
+                emit(SYNC_RECEIVE, null);
+            }
+        } else if (object instanceof Update) {
+            Update update = (Update) object;
 
-        this.scuttlebutt.applyUpdate(update);
+            // 如果自己发送的数据又传播回来，直接忽略
+            if (update.fromId.equals(scuttlebutt.peerId)) {
+                log.info("I receive my own message,fromId:{},update:{}", update.fromId, update);
+                return;
+            }
+
+            this.scuttlebutt.applyUpdate(update);
+        }
     }
 }

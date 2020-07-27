@@ -16,9 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class Scuttlebutt extends EventEmit {
 
     /**
-     * 本节点数据Id
+     * 本节点Id
      */
-    protected String sourceId;
+    protected String peerId;
 
     /**
      * 一个scuttlebutt管理多个duplex

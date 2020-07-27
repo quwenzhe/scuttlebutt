@@ -25,8 +25,12 @@ public class ScuttlebuttTest {
         Model modelCloud = new Model(modelNameCloud);
         Duplex duplexCloud = buildDuplex(modelCloud);
 
-        duplexVehicle.link(duplexCloud, duplexCloud::shakeHand);
-        duplexCloud.link(duplexVehicle, duplexVehicle::shakeHand);
+        // 互相建立连接后再握手
+        duplexVehicle.link(duplexCloud);
+        duplexCloud.link(duplexVehicle);
+
+        duplexCloud.shakeHand(duplexVehicle.getSources());
+        duplexVehicle.shakeHand(duplexCloud.getSources());
 
         Update setUpdate = buildUpdate(modelNameVehicle, keyVehicle, valueVehicle);
         modelVehicle.set(setUpdate);
