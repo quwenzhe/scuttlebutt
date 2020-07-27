@@ -53,5 +53,5 @@ public abstract class Scuttlebutt extends EventEmit {
      * @param sources 全部对端知识源
      * @return 每个端和本地的知识差
      */
-    protected abstract Map<String, Update> history(Map<String, Long> sources);
+    protected abstract List<Update> history(Map<String, Long> sources);
 }

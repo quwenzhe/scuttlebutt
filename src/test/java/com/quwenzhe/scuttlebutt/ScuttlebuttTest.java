@@ -6,8 +6,6 @@ import com.quwenzhe.scuttlebutt.model.Update;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Map;
-
 /**
  * @Description 单元测试
  * @Author quwenzhe
@@ -30,13 +28,13 @@ public class ScuttlebuttTest {
         duplexVehicle.link(duplexCloud, duplexCloud::shakeHand);
         duplexCloud.link(duplexVehicle, duplexVehicle::shakeHand);
 
-        Update updateVehicle = buildUpdate(modelNameVehicle, keyVehicle, valueVehicle);
-        modelVehicle.set(updateVehicle);
+        Update setUpdate = buildUpdate(modelNameVehicle, keyVehicle, valueVehicle);
+        modelVehicle.set(setUpdate);
 
-        Map<String, Update> vehicleUpdate = modelVehicle.get();
-        Map<String, Update> cloudUpdate = modelCloud.get();
-        Assert.assertTrue(vehicleUpdate.get(modelNameVehicle).equals(updateVehicle));
-        Assert.assertTrue(cloudUpdate.get(modelNameVehicle).equals(updateVehicle));
+        Update vehicleUpdate = modelVehicle.get(keyVehicle);
+        Update cloudUpdate = modelCloud.get(keyVehicle);
+        Assert.assertTrue(vehicleUpdate.equals(setUpdate));
+        Assert.assertTrue(cloudUpdate.equals(setUpdate));
     }
 
     private Duplex buildDuplex(Model model) {

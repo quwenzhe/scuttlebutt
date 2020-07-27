@@ -4,6 +4,7 @@ import com.quwenzhe.scuttlebutt.model.StreamOptions;
 import com.quwenzhe.scuttlebutt.model.Update;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -52,8 +53,8 @@ public class Duplex {
      * @param sources 对端掌握的全部知识数据源及最新时钟
      */
     public void shakeHand(Map<String, Long> sources) {
-        Map<String, Update> deltaUpdate = scuttlebutt.history(sources);
-        deltaUpdate.forEach((s, update) -> this.put(update));
+        List<Update> updates = scuttlebutt.history(sources);
+        updates.forEach(update -> this.update(update));
     }
 
     /**
