@@ -1,12 +1,14 @@
 package com.quwenzhe.scuttlebutt;
 
-import com.quwenzhe.scuttlebutt.model.StreamOptions;
+import com.quwenzhe.pull.stream.Duplex;
 import com.quwenzhe.scuttlebutt.model.Update;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
+import static com.quwenzhe.scuttlebutt.model.EventType.BROADCAST_UPDATE;
+import static com.quwenzhe.scuttlebutt.model.EventType.LEGACY_TIMESTAMP_UPDATE;
 
 /**
  * @Description 定义节点数据计算、存储标准
@@ -16,42 +18,79 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class Scuttlebutt extends EventEmit {
 
     /**
-     * 本节点Id
+     * 本节点id
      */
-    protected String peerId;
+    public String id;
 
     /**
-     * 一个scuttlebutt管理多个duplex
-     * 每个duplex负责和对端的一个连接
+     * 本节点掌握的所有端的最新时钟
+     * key:sourceId value:最新时钟
      */
-    protected List<Duplex> duplexes = new ArrayList<>();
+    public Map<String, Long> sources = new HashMap<>();
 
     /**
-     * 本节点+对端所有数据源的知识最新时钟
-     * key:sourceId value:节点最新时钟
-     */
-    protected Map<String, Long> sources = new ConcurrentHashMap<>();
-
-    /**
-     * 创建数据流
+     * 计算对端节点和本节点的知识差
      *
-     * @param streamOptions 流选项
-     * @return 通道
+     * @param sources 对端节点掌握的知识最新时钟
+     * @return 知识差
      */
-    protected abstract Duplex createStream(StreamOptions streamOptions);
+    public abstract List<Update> history(Map<String, Long> sources);
 
     /**
-     * 本节点知识更新、对端知识更新并同步到本节点
+     * 将知识更新到model
      *
      * @param update 知识
+     * @param <T>
+     * @return 更新成功/失败
      */
-    protected abstract void applyUpdate(Update update);
+    public abstract <T> boolean applyUpdate(Update<T> update);
 
     /**
-     * 针对每个数据源计算知识差
+     * 本地知识更新/对端知识更新
      *
-     * @param sources 全部对端知识源
-     * @return 每个端和本地的知识差
+     * @param update 知识
+     * @param <T>
+     * @return 成功:true;失败:false
      */
-    protected abstract List<Update> history(Map<String, Long> sources);
+    <T> boolean update(Update<T> update) {
+        long timestamp = update.timestamp;
+        String sourceId = update.sourceId;
+
+        long latestTimestamp = sources.computeIfAbsent(sourceId, (key) -> 0L);
+
+        if (latestTimestamp >= timestamp) {
+            emit(LEGACY_TIMESTAMP_UPDATE, id + "update is older,ignore update:" + update);
+            return false;
+        }
+
+        // 更新本地知识
+        boolean success = this.applyUpdate(update);
+        if (success) {
+            this.sources.put(sourceId, timestamp);
+        }
+
+        // 将知识广播到对端
+        emit(BROADCAST_UPDATE, update);
+
+        return success;
+    }
+
+    /**
+     * 创建SbStream
+     *
+     * @return 和对端通信的Duplex
+     */
+    public Duplex createSbStream() {
+        SbStream sbStream = new SbStream(this);
+        return sbStream.getDuplex();
+    }
+
+    /**
+     * 获取本端掌握的最新时钟
+     *
+     * @return
+     */
+    public Map<String, Long> getSources() {
+        return sources;
+    }
 }

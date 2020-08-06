@@ -1,66 +1,33 @@
 package com.quwenzhe.scuttlebutt;
 
-import com.quwenzhe.scuttlebutt.model.EventType;
 import com.quwenzhe.scuttlebutt.model.ModelValueItem;
-import com.quwenzhe.scuttlebutt.model.StreamOptions;
 import com.quwenzhe.scuttlebutt.model.Update;
 import com.quwenzhe.scuttlebutt.utils.Utils;
-import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+
+import static com.quwenzhe.scuttlebutt.model.EventType.LEGACY_TIMESTAMP_UPDATE;
+import static com.quwenzhe.scuttlebutt.model.EventType.MODEL_UPDATE;
 
 /**
  * @Description 知识内容存储
  * @Author quwenzhe
  * @Date 2020/7/22 7:37 PM
  */
-@Slf4j
 public class Model extends Scuttlebutt {
 
-    public Model(String peerId) {
-        this.peerId = peerId;
+    public Model(String id) {
+        this.id = id;
     }
 
     /**
-     * 保存每个节点最新的知识
-     * key:ModelValueItem的key value:节点最新知识
+     * 本端拥有的最新知识
+     * key:业务数据的key value:最新知识
      */
-    private Map<String, Update> stores = new ConcurrentHashMap<>();
+    private Map<String, Update> stores = new HashMap<>();
 
     @Override
-    protected Duplex createStream(StreamOptions streamOptions) {
-        Duplex duplex = new Duplex(this, streamOptions);
-        if (!this.duplexes.contains(duplex)) {
-            this.duplexes.add(duplex);
-        }
-
-        // 监听对端的事件
-        listenPeerEvents();
-
-        return duplex;
-    }
-
-    @Override
-    protected void applyUpdate(Update update) {
-        ModelValueItem modelValueItem = (ModelValueItem) update.data;
-        Update localUpdate = stores.getOrDefault(modelValueItem.key, new Update());
-        if (update.timestamp > localUpdate.timestamp) {
-            // 更新对端知识最新时钟
-            sources.put(update.sourceId, update.timestamp);
-
-            // 更新对端知识
-            stores.put(modelValueItem.key, update);
-        }
-
-        this.emit(EventType.UPDATE, update);
-    }
-
-    @Override
-    protected List<Update> history(Map<String, Long> sources) {
+    public List<Update> history(Map<String, Long> sources) {
         List<Update> history = new ArrayList<>();
 
         stores.forEach((key, update) -> {
@@ -75,27 +42,37 @@ public class Model extends Scuttlebutt {
         return history;
     }
 
-    /**
-     * 监听对端的事件
-     */
-    private void listenPeerEvents() {
-        this.subscribe(EventType.UPDATE, update -> notifyAllPeerDuplex((Update) update));
+    @Override
+    public <T> boolean applyUpdate(Update<T> update) {
+        ModelValueItem modelValueItem = (ModelValueItem) update.data;
+
+        if (stores.computeIfAbsent(modelValueItem.getKey(), (k) -> new Update()).timestamp > update.timestamp) {
+            emit(LEGACY_TIMESTAMP_UPDATE, "update is older,update:" + update);
+            return false;
+        }
+
+        stores.put(modelValueItem.getKey(), update);
+        emit(MODEL_UPDATE, update);
+
+        return true;
     }
 
     /**
-     * 通知所有对端的duplex
+     * 更新知识
      *
-     * @param update
+     * @param update 知识
      */
-    private void notifyAllPeerDuplex(Update update) {
-        this.duplexes.forEach(duplex -> duplex.put(update));
-    }
-
     public void set(Update update) {
-        this.applyUpdate(update);
+        this.update(new Update<>(update.data, System.currentTimeMillis(), this.id, this.id));
     }
 
+    /**
+     * 获取知识
+     *
+     * @param key 知识的key
+     * @return 知识
+     */
     public Update get(String key) {
-        return this.stores.get(key);
+        return stores.get(key);
     }
 }

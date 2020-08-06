@@ -5,7 +5,7 @@ package com.quwenzhe.scuttlebutt.model;
  * @Author quwenzhe
  * @Date 2020/7/22 5:50 PM
  */
-public class Update implements Comparable<Update> {
+public class Update<T> implements Comparable<Update> {
 
     /**
      * 数据产生源Id
@@ -25,7 +25,17 @@ public class Update implements Comparable<Update> {
     /**
      * 知识
      */
-    public Object data;
+    public T data;
+
+    public Update() {
+    }
+
+    public Update(T data, Long timestamp, String sourceId, String fromId) {
+        this.data = data;
+        this.timestamp = timestamp;
+        this.sourceId = sourceId;
+        this.fromId = fromId;
+    }
 
     @Override
     public int compareTo(Update otherUpdate) {

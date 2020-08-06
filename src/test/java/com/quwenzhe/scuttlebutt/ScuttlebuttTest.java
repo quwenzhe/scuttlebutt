@@ -1,9 +1,9 @@
 package com.quwenzhe.scuttlebutt;
 
+import com.quwenzhe.pull.stream.Duplex;
+import com.quwenzhe.pull.stream.Pull;
 import com.quwenzhe.scuttlebutt.model.ModelValueItem;
-import com.quwenzhe.scuttlebutt.model.StreamOptions;
 import com.quwenzhe.scuttlebutt.model.Update;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -15,43 +15,31 @@ public class ScuttlebuttTest {
 
     @Test
     public void putAndGet() {
-        String modelNameVehicle = "vehicle";
-        String keyVehicle = "key_" + modelNameVehicle;
-        String valueVehicle = "value_" + modelNameVehicle;
-        Model modelVehicle = new Model(modelNameVehicle);
-        Duplex duplexVehicle = buildDuplex(modelVehicle);
+        Model modelOne = new Model("one");
+        Model modelTwo = new Model("two");
 
-        String modelNameCloud = "cloud";
-        Model modelCloud = new Model(modelNameCloud);
-        Duplex duplexCloud = buildDuplex(modelCloud);
+        Duplex duplexOne = modelOne.createSbStream();
+        Duplex duplexTwo = modelTwo.createSbStream();
 
-        // 互相建立连接后再握手
-        duplexVehicle.link(duplexCloud);
-        duplexCloud.link(duplexVehicle);
+        // duplexOne的source --> duplexTwo的sink
+        Pull.pull(duplexOne, duplexTwo);
+        // duplexTwo的source --> duplexOne的sink
+        Pull.pull(duplexTwo, duplexOne);
 
-        duplexCloud.shakeHand(duplexVehicle.getSources());
-        duplexVehicle.shakeHand(duplexCloud.getSources());
+        String modelName = "modelOne";
+        String keyName = "keyOne";
+        String valueName = "valueOne";
+        Update update = buildUpdate(modelName, keyName, valueName);
+        modelOne.set(update);
 
-        Update setUpdate = buildUpdate(modelNameVehicle, keyVehicle, valueVehicle);
-        modelVehicle.set(setUpdate);
-
-        Update vehicleUpdate = modelVehicle.get(keyVehicle);
-        Update cloudUpdate = modelCloud.get(keyVehicle);
-        Assert.assertTrue(vehicleUpdate.equals(setUpdate));
-        Assert.assertTrue(cloudUpdate.equals(setUpdate));
-    }
-
-    private Duplex buildDuplex(Model model) {
-        StreamOptions streamOptions = new StreamOptions();
-        streamOptions.readable = true;
-        streamOptions.writable = true;
-        return model.createStream(streamOptions);
+        Update resultOne = modelOne.get(keyName);
+        Update resultTwo = modelTwo.get(keyName);
     }
 
     private Update buildUpdate(String modelName, String modelKey, String modelValue) {
         ModelValueItem modelValueItem = new ModelValueItem();
-        modelValueItem.key = modelKey;
-        modelValueItem.value = modelValue;
+        modelValueItem.setKey(modelKey);
+        modelValueItem.setValue(modelValue);
 
         Update update = new Update();
         update.sourceId = modelName;

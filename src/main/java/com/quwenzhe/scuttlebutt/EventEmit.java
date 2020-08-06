@@ -33,6 +33,12 @@ public abstract class EventEmit {
         return this;
     }
 
+    /**
+     * 发送事件
+     *
+     * @param event 事件
+     * @param data  内容
+     */
     public void emit(Object event, Object data) {
         List<Consumer> consumers = eventMap.getOrDefault(event, new ArrayList<>());
         consumers.forEach(consumer -> {
