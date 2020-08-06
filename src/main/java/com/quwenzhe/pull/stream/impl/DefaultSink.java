@@ -39,6 +39,7 @@ public class DefaultSink<T> implements Sink<T> {
 
     @Override
     public void read(Source<T> source) {
+        // sink读取数据时，建立sink与source的关系
         this.source = source;
 
         boolean stop = false;

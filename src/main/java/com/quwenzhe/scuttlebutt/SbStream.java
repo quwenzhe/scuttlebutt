@@ -30,6 +30,11 @@ public class SbStream {
     private Duplex duplex;
 
     /**
+     * 记录对端scuttlebutt的Id
+     */
+    private String peerId;
+
+    /**
      * 记录所有端知识的最新时钟
      */
     private Map<String, Long> peerSources = new HashMap<>();
@@ -75,7 +80,7 @@ public class SbStream {
 
     public void shakeHands(Outgoing outgoing) {
         // 获取对端的Id和对端掌握的最新知识时钟
-        String peerId = outgoing.getSourceId();
+        peerId = outgoing.getSourceId();
         Map<String, Long> peerSources = outgoing.getSources();
 
         // 计算本节点和对端的知识差
@@ -102,8 +107,8 @@ public class SbStream {
             return;
         }
 
-        // 新传播的知识来自自己，直接忽略
-        if (update.fromId.equals(sb.id)) {
+        // 从对端接收到的数据不再重复发送到同一对端
+        if (update.fromId.equals(peerId)) {
             sb.emit(UPDATE_FROM_PEER_WONT_SEND_BACK, "update from peerId" + sb.id + "won't sent update");
             return;
         }

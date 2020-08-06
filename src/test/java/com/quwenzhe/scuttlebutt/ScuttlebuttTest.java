@@ -4,6 +4,7 @@ import com.quwenzhe.pull.stream.Duplex;
 import com.quwenzhe.pull.stream.Pull;
 import com.quwenzhe.scuttlebutt.model.ModelValueItem;
 import com.quwenzhe.scuttlebutt.model.Update;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -34,6 +35,7 @@ public class ScuttlebuttTest {
 
         Update resultOne = modelOne.get(keyName);
         Update resultTwo = modelTwo.get(keyName);
+        Assert.assertTrue(resultOne.equals(resultTwo));
     }
 
     private Update buildUpdate(String modelName, String modelKey, String modelValue) {
