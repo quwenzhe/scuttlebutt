@@ -1,0 +1,12 @@
+architecture-diagram.png@startuml
+Source1 --> Source1: send outgoing
+Sink2 --> Source1: read outgoing
+Sink2 --> Sink2: computer history
+Sink2 --> Source2: send history
+Source2 --> Source2: send outgoing
+Sink1 --> Source2: read outgoing
+Sink1 --> Sink1: computer history
+Sink1 --> Source1: send history
+Sink1 --> Source2: read history
+Sink2 --> Source1: read history
+@enduml
