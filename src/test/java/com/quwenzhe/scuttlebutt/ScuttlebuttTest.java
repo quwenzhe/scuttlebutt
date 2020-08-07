@@ -2,6 +2,7 @@ package com.quwenzhe.scuttlebutt;
 
 import com.quwenzhe.pull.stream.Duplex;
 import com.quwenzhe.pull.stream.Pull;
+import com.quwenzhe.pull.stream.impl.DefaultThrough;
 import com.quwenzhe.scuttlebutt.model.ModelValueItem;
 import com.quwenzhe.scuttlebutt.model.Update;
 import org.junit.Assert;
@@ -23,9 +24,9 @@ public class ScuttlebuttTest {
         Duplex duplexTwo = modelTwo.createSbStream();
 
         // duplexOne的source --> duplexTwo的sink
-        Pull.pull(duplexOne, duplexTwo);
+        Pull.pull(duplexOne, new DefaultThrough(), duplexTwo);
         // duplexTwo的source --> duplexOne的sink
-        Pull.pull(duplexTwo, duplexOne);
+        Pull.pull(duplexTwo, new DefaultThrough(), duplexOne);
 
         String modelName = "modelOne";
         String keyName = "keyOne";
