@@ -20,8 +20,7 @@ public class DefaultDuplex<T> implements Duplex<T> {
 
     public DefaultDuplex(Function<T, Boolean> onSinkNext, Consumer<Throwable> onSinkClose) {
         this.source = new DefaultSource<>(new DefaultStreamBuffer<>(10_000));
-        this.sink = new DefaultSink<>(onSinkNext, () -> {
-        }, onSinkClose);
+        this.sink = new DefaultSink<>(onSinkNext, onSinkClose);
     }
 
     @Override

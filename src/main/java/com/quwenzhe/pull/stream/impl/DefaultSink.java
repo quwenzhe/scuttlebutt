@@ -2,8 +2,9 @@ package com.quwenzhe.pull.stream.impl;
 
 import com.quwenzhe.pull.stream.Sink;
 import com.quwenzhe.pull.stream.Source;
-import com.quwenzhe.pull.stream.model.ReadResult;
+import com.quwenzhe.pull.stream.funnction.SourceCallback;
 
+import javax.xml.ws.Holder;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -22,49 +23,41 @@ public class DefaultSink<T> implements Sink<T> {
     private Function<T, Boolean> onNext;
 
     /**
-     * 定义在sink从source提取数据，返回等待状态时触发的回调
-     */
-    private Runnable onWait;
-
-    /**
      * 定义在sink从source提取数据，返回关闭状态时触发的回调
      */
     private Consumer<Throwable> onClosed;
 
-    public DefaultSink(Function<T, Boolean> onNext, Runnable onWait, Consumer<Throwable> onClosed) {
+    /**
+     * 定义source执行完成，触发的回调函数
+     */
+    Holder<SourceCallback> holder = new Holder<>();
+
+    {
+        holder.value = ((endOrError, data) -> {
+            // 如果结束/异常，直接返回
+            if (endOrError != null) {
+                return;
+            }
+
+            // sink接收到source传入的数据，调用回调函数处理数据
+            onNext.apply((T) data);
+
+            // 再次触发从source读取数据，并定义source执行完后的回调函数
+            source.read(null, holder.value);
+        });
+    }
+
+    public DefaultSink(Function<T, Boolean> onNext, Consumer<Throwable> onClosed) {
         this.onNext = onNext;
-        this.onWait = onWait;
         this.onClosed = onClosed;
     }
 
     @Override
     public void read(Source<T> source) {
-        // sink读取数据时，建立sink与source的关系
+        // sink读取数据时记录和sink建立连接的source
         this.source = source;
 
-        boolean stop = false;
-        boolean end = false;
-        while (!stop) {
-            ReadResult<T> readResult = source.get(end, this);
-            switch (readResult.status) {
-                case Available:
-                    stop = onNext.apply(readResult.data);
-                    break;
-                case Wait:
-                    stop = true;
-                    onWait.run();
-                    break;
-                case Closed:
-                    onClosed.accept(readResult.throwable);
-                    stop = true;
-                    break;
-            }
-        }
+        // 从source读取数据，并传入source执行完的回调函数
+        source.read(null, holder.value);
     }
-
-    @Override
-    public void notifyAvailable() {
-        read(source);
-    }
-
 }

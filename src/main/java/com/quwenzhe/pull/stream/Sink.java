@@ -14,8 +14,4 @@ public interface Sink<T> extends Stream {
      */
     void read(Source<T> source);
 
-    /**
-     * source有了新数据，通过此方法通知sink
-     */
-    void notifyAvailable();
 }

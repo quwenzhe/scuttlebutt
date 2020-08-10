@@ -1,6 +1,7 @@
 package com.quwenzhe.pull.stream;
 
-import com.quwenzhe.pull.stream.model.ReadResult;
+import com.quwenzhe.pull.stream.funnction.SourceCallback;
+import com.quwenzhe.pull.stream.model.EndOrError;
 
 /**
  * @Description 数据源
@@ -13,16 +14,14 @@ public interface Source<T> extends Stream {
      * 向source推送新数据
      *
      * @param data 数据
-     * @return 成功:true;失败:false
      */
-    boolean push(T data);
+    void push(T data);
 
     /**
-     * 从source读取数据
+     * 供sink读取数据
      *
-     * @param end  是否结束
-     * @param sink 数据提取方
-     * @return 读取结果
+     * @param end      结束/异常
+     * @param callback 执行完后的回调方法
      */
-    ReadResult<T> get(boolean end, Sink<T> sink);
+    void read(EndOrError end, SourceCallback<T> callback);
 }

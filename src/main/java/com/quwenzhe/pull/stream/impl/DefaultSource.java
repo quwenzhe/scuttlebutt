@@ -1,9 +1,9 @@
 package com.quwenzhe.pull.stream.impl;
 
-import com.quwenzhe.pull.stream.Sink;
 import com.quwenzhe.pull.stream.Source;
 import com.quwenzhe.pull.stream.StreamBuffer;
-import com.quwenzhe.pull.stream.model.ReadResult;
+import com.quwenzhe.pull.stream.funnction.SourceCallback;
+import com.quwenzhe.pull.stream.model.EndOrError;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -17,51 +17,40 @@ public class DefaultSource<T> implements Source<T> {
     private StreamBuffer<T> buffer;
 
     /**
-     * 记录和本source建立连接的sink
+     * 记录source执行完成触发的回调
      */
-    private Sink<T> sink;
+    SourceCallback<T> callback;
 
     public DefaultSource(StreamBuffer<T> buffer) {
         this.buffer = buffer;
     }
 
     @Override
-    public boolean push(T data) {
-        boolean success = buffer.offer(data);
-        if (!success) {
-            // todo:溢出来如何通知上游
-            log.warn("buffer is exceed");
+    public void push(T data) {
+        // 如果callback不为空，立刻执行回调函数
+        // 如果callback为空，说明sink未读取过source，先放到缓存
+        if (callback != null) {
+            callback.invoke(null, data);
+        } else {
+            buffer.offer(data);
         }
-
-        doNotify();
-        return success;
     }
 
     @Override
-    public ReadResult<T> get(boolean end, Sink<T> sink) {
-        this.sink = sink;
-
-        // 如果已经结束，直接返回完成状态
-        if (end) {
-            return ReadResult.Completed;
+    public void read(EndOrError end, SourceCallback<T> callback) {
+        // 如果sink已结束，直接通知sink
+        if (end != null) {
+            callback.invoke(end, null);
+            return;
         }
 
-        // 无数据返回等待状态
-        // 有数据直接返回数据
+        this.callback = callback;
+
         T data = buffer.poll();
         if (data == null) {
-            return ReadResult.Waiting;
+            callback.invoke(new EndOrError(true), data);
         } else {
-            return new ReadResult<>(data);
-        }
-    }
-
-    /**
-     * source有了数据后通知sink拉取
-     */
-    private void doNotify() {
-        if (sink != null) {
-            sink.notifyAvailable();
+            callback.invoke(null, data);
         }
     }
 }
