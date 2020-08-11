@@ -1,5 +1,7 @@
 package com.quwenzhe.pull.stream;
 
+import com.quwenzhe.pull.stream.model.EndOrError;
+
 /**
  * @Description 从对端读取数据
  * @Author quwenzhe
@@ -14,4 +16,10 @@ public interface Sink<T> extends Stream {
      */
     void read(Source<T> source);
 
+    /**
+     * 关闭sink连接
+     *
+     * @param endOrError 结束/异常
+     */
+    void close(EndOrError endOrError);
 }

@@ -4,6 +4,7 @@ import com.quwenzhe.pull.stream.Duplex;
 import com.quwenzhe.pull.stream.impl.DefaultDuplex;
 import com.quwenzhe.scuttlebutt.model.Outgoing;
 import com.quwenzhe.scuttlebutt.model.Update;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import static com.quwenzhe.scuttlebutt.model.EventType.*;
  * @Author quwenzhe
  * @Date 2020/8/5 5:44 PM
  */
+@Slf4j
 public class SbStream {
 
     /**
@@ -43,7 +45,7 @@ public class SbStream {
         this.sb = scuttlebutt;
 
         // 创建属于本SbStream的Duplex
-        this.duplex = new DefaultDuplex<>(this::onData, this::onClose);
+        this.duplex = new DefaultDuplex<>(this::onData);
 
         // 向对端发送Outgoing
         Outgoing outgoing = new Outgoing(sb.id, sb.getSources());
@@ -73,9 +75,6 @@ public class SbStream {
         }
 
         return true;
-    }
-
-    private void onClose(Throwable throwable) {
     }
 
     public void shakeHands(Outgoing outgoing) {
@@ -123,6 +122,7 @@ public class SbStream {
 
 
     public void processCommand(String command) {
+        log.info("receive command:{}", command);
     }
 
     public void processUpdate(Update update) {

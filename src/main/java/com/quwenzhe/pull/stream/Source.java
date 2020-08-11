@@ -24,4 +24,11 @@ public interface Source<T> extends Stream {
      * @param callback 执行完后的回调方法
      */
     void read(EndOrError end, SourceCallback<T> callback);
+
+    /**
+     * 关闭source连接
+     *
+     * @param endOrError 结束/异常
+     */
+    void close(EndOrError endOrError);
 }

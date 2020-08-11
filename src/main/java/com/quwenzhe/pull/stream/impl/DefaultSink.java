@@ -3,6 +3,7 @@ package com.quwenzhe.pull.stream.impl;
 import com.quwenzhe.pull.stream.Sink;
 import com.quwenzhe.pull.stream.Source;
 import com.quwenzhe.pull.stream.funnction.SourceCallback;
+import com.quwenzhe.pull.stream.model.EndOrError;
 
 import javax.xml.ws.Holder;
 import java.util.function.Consumer;
@@ -15,6 +16,9 @@ import java.util.function.Function;
  */
 public class DefaultSink<T> implements Sink<T> {
 
+    /**
+     * 记录与sink建立连接的source
+     */
     private Source<T> source;
 
     /**
@@ -25,7 +29,7 @@ public class DefaultSink<T> implements Sink<T> {
     /**
      * 定义在sink从source提取数据，返回关闭状态时触发的回调
      */
-    private Consumer<Throwable> onClosed;
+    private Consumer<EndOrError> onClose;
 
     /**
      * 定义source执行完成，触发的回调函数
@@ -47,9 +51,9 @@ public class DefaultSink<T> implements Sink<T> {
         });
     }
 
-    public DefaultSink(Function<T, Boolean> onNext, Consumer<Throwable> onClosed) {
+    public DefaultSink(Function<T, Boolean> onNext, Consumer<EndOrError> onClose) {
         this.onNext = onNext;
-        this.onClosed = onClosed;
+        this.onClose = onClose;
     }
 
     @Override
@@ -59,5 +63,12 @@ public class DefaultSink<T> implements Sink<T> {
 
         // 从source读取数据，并传入source执行完的回调函数
         source.read(null, holder.value);
+    }
+
+    @Override
+    public void close(EndOrError endOrError) {
+        if (onClose != null) {
+            onClose.accept(endOrError);
+        }
     }
 }

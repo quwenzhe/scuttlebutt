@@ -6,6 +6,8 @@ import com.quwenzhe.pull.stream.funnction.SourceCallback;
 import com.quwenzhe.pull.stream.model.EndOrError;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.function.Consumer;
+
 /**
  * @Description 默认数据源实现
  * @Author quwenzhe
@@ -21,8 +23,14 @@ public class DefaultSource<T> implements Source<T> {
      */
     SourceCallback<T> callback;
 
-    public DefaultSource(StreamBuffer<T> buffer) {
+    /**
+     * 定义Source关闭时的回调函数
+     */
+    private Consumer<EndOrError> onClose;
+
+    public DefaultSource(StreamBuffer<T> buffer, Consumer<EndOrError> onClose) {
         this.buffer = buffer;
+        this.onClose = onClose;
     }
 
     @Override
@@ -46,11 +54,24 @@ public class DefaultSource<T> implements Source<T> {
 
         this.callback = callback;
 
+        // source有数据，调用sink回调方法，并设置为结束状态
+        // source没有数据，调用sink回调方法，传入数据继续读取
         T data = buffer.poll();
         if (data == null) {
             callback.invoke(new EndOrError(true), data);
         } else {
             callback.invoke(null, data);
+        }
+    }
+
+    @Override
+    public void close(EndOrError endOrError) {
+        if (onClose != null) {
+            onClose.accept(endOrError);
+        }
+
+        if (callback != null) {
+            callback.invoke(endOrError, null);
         }
     }
 }
