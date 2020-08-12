@@ -7,27 +7,27 @@ package com.quwenzhe.pull.stream;
  */
 public class Pull {
 
-    public static <R> Source<R> pull(Duplex duplex, Stream... streams) {
+    public static <R> Source<R> pull(Duplex<R> duplex, Stream... streams) {
         return pull(duplex.source(), streams);
     }
 
-    public static <R> Source<R> pull(Source source, Stream... streams) {
+    public static <R> Source<R> pull(Source<R> source, Stream... streams) {
         for (int i = 0; i < streams.length - 1; i++) {
-            Through through = (Through) streams[i];
+            Through<R> through = (Through) streams[i];
             source = through.transform(source);
         }
 
         Stream stream = streams[streams.length - 1];
         if (stream instanceof Sink) {
-            Sink sink = (Sink) stream;
+            Sink<R> sink = (Sink) stream;
             sink.read(source);
             return null;
         } else if (stream instanceof Duplex) {
-            Duplex duplex = (Duplex) stream;
+            Duplex<R> duplex = (Duplex) stream;
             duplex.sink().read(source);
             return null;
         } else {
-            Through through = (Through) stream;
+            Through<R> through = (Through) stream;
             return through.transform(source);
         }
     }

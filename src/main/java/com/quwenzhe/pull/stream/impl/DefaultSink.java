@@ -3,6 +3,7 @@ package com.quwenzhe.pull.stream.impl;
 import com.quwenzhe.pull.stream.Sink;
 import com.quwenzhe.pull.stream.Source;
 import com.quwenzhe.pull.stream.funnction.SourceCallback;
+import com.quwenzhe.pull.stream.looper.Looper;
 import com.quwenzhe.pull.stream.model.EndOrError;
 
 import javax.xml.ws.Holder;
@@ -32,6 +33,11 @@ public class DefaultSink<T> implements Sink<T> {
     private Consumer<EndOrError> onClose;
 
     /**
+     * 为避免sink与source循环调用导致栈溢出，sink定义的回调函数通过异步线程方式调用source
+     */
+    private Looper looper = new Looper();
+
+    /**
      * 定义source执行完成，触发的回调函数
      */
     Holder<SourceCallback> holder = new Holder<>();
@@ -47,7 +53,9 @@ public class DefaultSink<T> implements Sink<T> {
             onNext.apply((T) data);
 
             // 再次触发从source读取数据，并定义source执行完后的回调函数
-            source.read(null, holder.value);
+            looper.loop(() -> {
+                source.read(null, holder.value);
+            }).run();
         });
     }
 
