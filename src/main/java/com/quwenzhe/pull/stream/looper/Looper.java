@@ -19,7 +19,7 @@ public class Looper {
                     called = false;
                     function.run();
                 }
-                active = true;
+                active = false;
             }
         };
     }

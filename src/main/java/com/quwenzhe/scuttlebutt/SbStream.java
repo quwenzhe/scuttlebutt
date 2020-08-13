@@ -59,7 +59,7 @@ public class SbStream {
      *
      * @param update 知识
      */
-    private boolean onData(Object update) {
+    private void onData(Object update, Runnable readNext) {
         // 1.sink读取到outgoing,计算知识差并发送给对端;
         // 2.sink读取到command,发送命令事件
         // 3.sink读取到Update,应用到本地
@@ -74,7 +74,8 @@ public class SbStream {
             processUpdate((Update) update);
         }
 
-        return true;
+        // 触发sink继续执行loop
+        readNext.run();
     }
 
     public void shakeHands(Outgoing outgoing) {

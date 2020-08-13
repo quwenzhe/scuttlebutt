@@ -5,8 +5,7 @@ import com.quwenzhe.pull.stream.Sink;
 import com.quwenzhe.pull.stream.Source;
 import com.quwenzhe.pull.stream.model.EndOrError;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 
 /**
  * @Description 默认连接器
@@ -19,8 +18,8 @@ public class DefaultDuplex<T> implements Duplex<T> {
 
     private Sink<T> sink;
 
-    public DefaultDuplex(Function<T, Boolean> onSinkNext) {
-        this.source = new DefaultSource<>(new DefaultStreamBuffer<>(1), endOrError -> {
+    public DefaultDuplex(BiConsumer<T, Runnable> onSinkNext) {
+        this.source = new DefaultSource<>(new DefaultStreamBuffer<>(10_000), endOrError -> {
         });
         this.sink = new DefaultSink<>(onSinkNext, endOrError -> {
         });

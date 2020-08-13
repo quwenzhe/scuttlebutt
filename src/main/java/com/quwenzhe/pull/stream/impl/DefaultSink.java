@@ -7,8 +7,8 @@ import com.quwenzhe.pull.stream.looper.Looper;
 import com.quwenzhe.pull.stream.model.EndOrError;
 
 import javax.xml.ws.Holder;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * @Description 默认读取数据源
@@ -25,7 +25,7 @@ public class DefaultSink<T> implements Sink<T> {
     /**
      * 定义在sink从source提取数据，返回可继续读取时触发的回调
      */
-    private Function<T, Boolean> onNext;
+    private BiConsumer<T, Runnable> onNext;
 
     /**
      * 定义在sink从source提取数据，返回关闭状态时触发的回调
@@ -42,6 +42,13 @@ public class DefaultSink<T> implements Sink<T> {
      */
     Holder<SourceCallback> holder = new Holder<>();
 
+    /**
+     * 再次触发从source读取数据，并定义source执行完后的回调函数
+     */
+    Runnable runnable = looper.loop(() -> {
+        source.read(null, holder.value);
+    });
+
     {
         holder.value = ((endOrError, data) -> {
             // 如果结束/异常，直接返回
@@ -50,16 +57,11 @@ public class DefaultSink<T> implements Sink<T> {
             }
 
             // sink接收到source传入的数据，调用回调函数处理数据
-            onNext.apply((T) data);
-
-            // 再次触发从source读取数据，并定义source执行完后的回调函数
-            looper.loop(() -> {
-                source.read(null, holder.value);
-            }).run();
+            onNext.accept((T) data, runnable);
         });
     }
 
-    public DefaultSink(Function<T, Boolean> onNext, Consumer<EndOrError> onClose) {
+    public DefaultSink(BiConsumer<T, Runnable> onNext, Consumer<EndOrError> onClose) {
         this.onNext = onNext;
         this.onClose = onClose;
     }

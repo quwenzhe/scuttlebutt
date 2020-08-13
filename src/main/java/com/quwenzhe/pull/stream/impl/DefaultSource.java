@@ -35,10 +35,10 @@ public class DefaultSource<T> implements Source<T> {
 
     @Override
     public void push(T data) {
-        // 如果callback不为空，立刻执行回调函数
-        // 如果callback为空，说明sink未读取过source，先放到缓存
         if (callback != null) {
-            callback.invoke(null, data);
+            SourceCallback<T> sourceCallback = callback;
+            callback = null;
+            sourceCallback.invoke(null, data);
         } else {
             buffer.offer(data);
         }
@@ -52,13 +52,15 @@ public class DefaultSource<T> implements Source<T> {
             return;
         }
 
-        this.callback = callback;
-
         // source有数据，调用sink回调方法，并设置为结束状态
         // source没有数据，调用sink回调方法，传入数据继续读取
         T data = buffer.poll();
         if (data == null) {
-            callback.invoke(new EndOrError(true), data);
+            // source数据为空时，才赋值callback有两种效果：
+            // 1.source按顺序push数据到queue，同时确保sink按顺序从queue读取；
+            // 2.sink主动触发消费，sink消费完时，source判断callback不为空，再次触发sink读取；
+            this.callback = callback;
+            callback.invoke(new EndOrError(true), null);
         } else {
             callback.invoke(null, data);
         }
